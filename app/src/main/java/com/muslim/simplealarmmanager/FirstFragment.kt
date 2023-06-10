@@ -1,39 +1,61 @@
 package com.muslim.simplealarmmanager
 
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
-import androidx.fragment.app.Fragment
+import android.os.SystemClock
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.navigation.fragment.findNavController
+import androidx.fragment.app.Fragment
 import com.muslim.simplealarmmanager.databinding.FragmentFirstBinding
+import java.util.Calendar
 
-/**
- * A simple [Fragment] subclass as the default destination in the navigation.
- */
 class FirstFragment : Fragment() {
 
+    private val calendar = Calendar.getInstance()
+    private lateinit var alarmIntent: PendingIntent
+    private var alarmManager: AlarmManager? = null
     private var _binding: FragmentFirstBinding? = null
 
-    // This property is only valid between onCreateView and
-    // onDestroyView.
     private val binding get() = _binding!!
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-
+    ): View {
         _binding = FragmentFirstBinding.inflate(inflater, container, false)
         return binding.root
-
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.buttonFirst.setOnClickListener {
-            findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
+        binding.timePicker.setIs24HourView(true)
+        alarmManager = requireActivity().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        alarmIntent = Intent(context, AlarmReceiver::class.java).let {intent ->
+            intent.putExtra("key", "Hello!")
+            PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+        }
+
+        binding.button.setOnClickListener {
+            calendar.set(Calendar.HOUR_OF_DAY, binding.timePicker.hour)
+            calendar.set(Calendar.MINUTE, binding.timePicker.minute)
+            alarmManager?.setExact(
+                AlarmManager.RTC_WAKEUP,
+                calendar.timeInMillis,
+                alarmIntent
+            )
+        }
+        binding.button2.setOnClickListener {
+            alarmManager?.setInexactRepeating(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                SystemClock.elapsedRealtime(),
+                60 * 1000,
+                alarmIntent
+            )
         }
     }
 
